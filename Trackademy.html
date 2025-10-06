@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trackademy - Planner</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #fdf6f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .planner {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 20px;
+      width: 95%;
+      max-width: 900px;
+    }
+
+    .app-name {
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+      color: #c94f7c;
+      margin-bottom: 10px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      color: #c94f7c;
+      margin: 0;
+    }
+
+    .nav-btn {
+      background: #f3d1e0;
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      font-size: 1.2em;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .nav-btn:hover {
+      background: #e5b3c4;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    .day-name {
+      text-align: center;
+      font-weight: bold;
+      padding: 8px 0;
+      color: #d47fa6;
+    }
+
+    .day {
+      padding: 18px;
+      text-align: center;
+      border-radius: 12px;
+      background: #fdf0f6;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .day:hover {
+      background: #f3d1e0;
+      transform: scale(1.05);
+    }
+
+    .empty {
+      background: transparent;
+      cursor: default;
+    }
+
+    .due-today {
+      background: #ffcccc !important;
+      border: 2px solid #ff4d4d;
+      font-weight: bold;
+    }
+
+    .upcoming {
+      background: #fff6b3 !important;
+    }
+
+    .todo {
+      margin-top: 20px;
+      background: #fdf0f6;
+      border-radius: 15px;
+      padding: 15px;
+    }
+
+    .todo h2 {
+      text-align: center;
+      color: #c94f7c;
+      font-size: 1.2em;
+      margin-top: 0;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      background: #fff;
+      margin: 6px 0;
+      padding: 10px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9em;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .delete-btn {
+      background: #ff4d4d;
+      border: none;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8em;
+    }
+
+    .delete-btn:hover {
+      background: #cc0000;
+    }
+
+    @media (max-width: 768px) {
+      .planner {
+        padding: 15px;
+      }
+      .app-name {
+        font-size: 1.5em;
+      }
+      header h1 {
+        font-size: 1.2em;
+      }
+      .day {
+        padding: 12px;
+        font-size: 0.8em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .day {
+        padding: 10px;
+        font-size: 0.75em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="planner">
+    <div class="app-name"> Trackademy</div>
+    
+    <header>
+      <button class="nav-btn" id="prevMonth">◀</button>
+      <h1 id="monthYear">October 2025</h1>
+      <button class="nav-btn" id="nextMonth">▶</button>
+    </header>
+
+    <div class="calendar" id="calendar"></div>
+
+    <div class="todo">
+      <h2>📝 To-Do List</h2>
+      <ul id="taskList"></ul>
+    </div>
+  </div>
+
+  <!-- 🔔 Reminder Sound -->
+  <audio id="reminderSound" src="https://cdn.pixabay.com/download/audio/2023/03/15/audio_58e19a36f2.mp3?filename=notification-113508.mp3"></audio>
+
+  <script>
+    const calendar = document.getElementById("calendar");
+    const monthYear = document.getElementById("monthYear");
+    const prevMonthBtn = document.getElementById("prevMonth");
+    const nextMonthBtn = document.getElementById("nextMonth");
+    const taskList = document.getElementById("taskList");
+    const reminderSound = document.getElementById("reminderSound");
+
+    let currentDate = new Date();
+
+    function playReminder() {
+      reminderSound.currentTime = 0;
+      reminderSound.play();
+    }
+
+    function renderCalendar(date) {
+      calendar.innerHTML = "";
+      const month = date.getMonth();
+      const year = date.getFullYear();
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      monthYear.textContent = `${monthNames[month]} ${year}`;
+
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      dayNames.forEach(d => {
+        const div = document.createElement("div");
+        div.classList.add("day-name");
+        div.textContent = d;
+        calendar.appendChild(div);
+      });
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement("div");
+        empty.classList.add("day", "empty");
+        calendar.appendChild(empty);
+      }
+
+      const today = new Date();
+      for (let d = 1; d <= lastDate; d++) {
+        const day = document.createElement("div");
+        day.classList.add("day");
+        day.textContent = d;
+
+        if (
+          d === today.getDate() &&
+          month === today.getMonth() &&
+          year === today.getFullYear()
+        ) {
+          day.classList.add("due-today");
+          // 🔔 Play reminder sound for today
+          setTimeout(playReminder, 1000);
+        } else if (d > today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+          day.classList.add("upcoming");
+        }
+
+        day.addEventListener("click", () => {
+          const task = prompt(`Enter assignment for ${monthNames[month]} ${d}, ${year}:`);
+          if (task) {
+            addTask(`${monthNames[month]} ${d}, ${year}: ${task}`);
+            playReminder(); // play reminder sound when adding a task
+          }
+        });
+
+        calendar.appendChild(day);
+      }
+    }
+
+    function addTask(taskText) {
+      const li = document.createElement("li");
+      li.textContent = taskText;
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.classList.add("delete-btn");
+      deleteBtn.onclick = () => li.remove();
+
+      li.appendChild(deleteBtn);
+      taskList.appendChild(li);
+    }
+
+    prevMonthBtn.addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar(currentDate);
+    });
+
+    nextMonthBtn.addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar(currentDate);
+    });
+
+    renderCalendar(currentDate);
+  </script>
+</body>
+</html>
